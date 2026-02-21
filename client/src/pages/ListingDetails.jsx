@@ -1,12 +1,20 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, use } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { getProfileLink, platformIcons } from '../assets/assets';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeftIcon, ArrowUpRightFromSquareIcon, Calendar, CheckCircle2, ChevronLeft, ChevronLeftIcon, ChevronRightIcon, DollarSign, Eye, EyeIcon, LineChart, LineChartIcon, Loader2Icon, MapPin, MessageSquareMore, MessageSquareMoreIcon, ShoppingBagIcon, Users } from 'lucide-react';
 import { setChat } from '../app/features/chatSlice';
+import {useAuth, useClerk, useUser} from '@clerk/clerk-react'
+import toast from 'react-hot-toast'
+import api from '../configs/axios';
+
 
 
 const ListingDetails = () => {
+
+  const {user,isLoaded}  = useUser() 
+  const {openSignIn}= useClerk();
+  const {getToken}= useAuth()
 
   const dispatch=useDispatch()
 
@@ -26,8 +34,37 @@ const ListingDetails = () => {
 
   const purchaseAccount=async()=>{
 
+    try {
+      if(!user){
+        return openSignIn()
+      }
+
+      toast.loading("creating payment link...")
+
+      const token=await getToken();
+      const {data}=await api.get(`/api/listing/purchase-account/${listing.id}`,{
+        headers:{
+          Authorization:`Bearer ${token}`
+        }
+      })
+
+      toast.dismissAll()
+      window.location.href=data.paymentLink;
+    } catch (error) {
+      toast.dismissAll()
+      toast.error(error?.response?.data?.message || error.message)
+      console.log(error);
+    }
+
   }
+  
   const loadChatbox=()=>{
+    if(!isLoaded || !user){      
+      return toast("Please login to chat with seller")      
+    }
+    if(user.id === listing.ownerId){
+      return toast("You cannot chat on your own listing")
+    }
     dispatch(setChat({listing: listing}))
   }
   

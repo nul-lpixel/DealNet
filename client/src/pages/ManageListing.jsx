@@ -1,13 +1,20 @@
+import { useAuth } from '@clerk/clerk-react'
 import { Loader2Icon, Upload, X } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate, useParams } from 'react-router-dom'
+import { getAllPublicListing, getAllUserListing } from '../app/features/listingSlice'
+import api from '../configs/axios'
 
 const ManageListing = () => {
   const {id}=useParams()
   const navigate=useNavigate()
   const {userListings=[]}=useSelector((state)=>state.listing) 
+
+  const {getToken}=useAuth()
+  const dispatch = useDispatch();
+
 
   const [isEditing,setIsEditing]=useState(false)
   const [loadingListing,setLoadingListing]=useState(false)
@@ -22,8 +29,8 @@ const ManageListing = () => {
     niche: '',
     price: '',
     description: '',
-    verified: '',
-    monetized: '',
+    verified: false,
+    monetized: false,
     country: '',
     age_range: '',
     images: [],
@@ -77,6 +84,54 @@ const ManageListing = () => {
 
   const handleSubmit = async (e)=>{
     e.preventDefault();
+    toast.loading("Saving...")
+    const dataCopy= structuredClone(formData);
+     // ✅ Ensure boolean fields are actually booleans
+    dataCopy.verified = Boolean(dataCopy.verified);
+    dataCopy.monetized = Boolean(dataCopy.monetized);
+
+    try {
+      if(isEditing){
+        dataCopy.images= formData.images.filter((image)=>typeof image === 'string') //only send existing images for edit
+
+        const formDataInstance = new FormData()
+        formDataInstance.append('accountDetails', JSON.stringify(dataCopy));
+
+        formData.images.filter((image)=> typeof image !== 'string').forEach((image)=>{
+          formDataInstance.append('images', image) //append new images separately
+        })
+
+        const token= await getToken();
+        const {data}= await api.put(`/api/listing`, formDataInstance, {headers: {Authorization: `Bearer ${token}`}})
+        toast.dismissAll()
+        toast.success(data.message)
+        dispatch(getAllUserListing({getToken}))
+        dispatch(getAllPublicListing())
+        navigate('/my-listings')
+      
+      }else{
+        delete dataCopy.images //remove images from main payload for create, as they will be sent as form-data files
+
+        const formDataInstance = new FormData()
+        formDataInstance.append('accountDetails', JSON.stringify(dataCopy));
+
+        formData.images.forEach((image)=>{
+          formDataInstance.append('images', image) //append images separately
+        })  
+
+        const token= await getToken();
+        const {data}= await api.post(`/api/listing`, formDataInstance, {headers: {Authorization: `Bearer ${token}`}})
+        toast.dismissAll()
+        toast.success(data.message)
+        dispatch(getAllUserListing({getToken}))
+        dispatch(getAllPublicListing())
+        navigate('/my-listings')
+      }
+      
+    } catch (error) {
+      toast.dismissAll()
+      toast.error(error.response?.data?.message || error.message)
+    }
   };
 
   if(loadingListing){
@@ -142,7 +197,7 @@ const ManageListing = () => {
         {/* Pricing */}
 
         <Section title='Pricing & Description'>
-          <InputField label='Asking Price(USD)' type='number' min={0}  value={formData.price} placeholder='2500.00' onChange={(v)=>handleInputChange('country',v)} required={true}/>
+          <InputField label='Asking Price(USD)' type='number' min={0}  value={formData.price} placeholder='2500.00' onChange={(v)=>handleInputChange('price',v)} required={true}/>
 
           <TextAreaField label='Description *' value={formData.description} onChange={(v)=>handleInputChange('description',v)} required={true}/>
         </Section>
@@ -190,14 +245,14 @@ const ManageListing = () => {
 
 /* ---Common Elements--- */
 const Section = ({title,children}) => (
-  <div className='bg-white rounded-lg border bordere-gray-200 p-6 space-y-6'>
+  <div className='bg-white rounded-lg border border-gray-200 p-6 space-y-6'>
     <h2 className='text-lg font-semibold text-gray-800'>{title}</h2>
       {children}    
   </div>
 )
 const InputField=({label,value,onChange,placeholder,type='text', required=false,min=null,max=null})=>(
   <div>
-    <label className='bolck text-sm font-medium text-gray-700 mb-2'>{label}</label>
+    <label className='block text-sm font-medium text-gray-700 mb-2'>{label}</label>
     <input type={type} min={min} max={max} placeholder={placeholder} value={value} onChange={(e)=>onChange(e.target.value)} 
     className='w-full px-3 py-1.5 text-gray-600 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 border-gray-300'
     required={required}/>
@@ -206,7 +261,7 @@ const InputField=({label,value,onChange,placeholder,type='text', required=false,
 
 const SelectField=({label,value,onChange,options,required=false})=>(
   <div>
-    <label className='bolck text-sm font-medium text-gray-700 mb-2'>{label}</label>
+    <label className='block text-sm font-medium text-gray-700 mb-2'>{label}</label>
     <select value={value} onChange={(e)=>onChange(e.target.value)} 
     className='w-full px-3 py-1.5 text-gray-600 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 border-gray-300'
     required={required}>
@@ -227,7 +282,7 @@ const CheckBoxField=({label,checked,onChange,required=false})=>(
 
 const TextAreaField=({label,value,onChange,required=false})=>(
   <div>
-    <label className='bolck text-sm font-medium text-gray-700 mb-2'>{label}</label>
+    <label className='block text-sm font-medium text-gray-700 mb-2'>{label}</label>
     <textarea rows={5} value={value} onChange={(e)=>onChange(e.target.value)} 
     className='w-full px-3 py-1.5 text-gray-600 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 border-gray-300'
     required={required}>      

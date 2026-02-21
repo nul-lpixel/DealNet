@@ -21,7 +21,7 @@ const MarketPlace = () => {
     monetized: false,
   });
 
-  const {listings} = useSelector(state => state.listing)
+  const {listings=[]} = useSelector(state => state.listing)
 
   const filteredListings = listings.filter((listing)=>{    
     if(filters.platform && filters.platform.length>0 ){

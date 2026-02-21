@@ -4,8 +4,17 @@ import { useState } from 'react';
 import { useEffect } from 'react';
 import ListingDetailsModal from '../../components/admin/ListingDetailsModal';
 import { dummyListings } from '../../assets/assets';
+import { useAuth, useUser } from '@clerk/clerk-react';
+import toast from 'react-hot-toast';
+import api from '../../configs/axios';
+
+
 
 const Dashboard = () => {
+
+    const {user} =useUser()
+    const {getToken} = useAuth()
+
     const currency = import.meta.env.VITE_CURRENCY || '$';
 
     const [loading, setLoading] = useState(true);
@@ -13,7 +22,7 @@ const Dashboard = () => {
         totalListings: 0,
         totalRevenue: 0,
         activeListings: 0,
-        totalUser: 0,
+        totalUsers: 0,
         recentListings: [],
     });
     const [showModal, setShowModal] = useState(null);
@@ -22,23 +31,32 @@ const Dashboard = () => {
         { title: 'Total Listings', value: dashboardData.totalListings || '0', icon: ChartLineIcon },
         { title: 'Total Revenue', value: currency + dashboardData.totalRevenue.toLocaleString() || '0', icon: CircleDollarSignIcon },
         { title: 'Active Listings', value: dashboardData.activeListings || '0', icon: ListIcon },
-        { title: 'Total Users', value: dashboardData.totalUser || '0', icon: UsersIcon },
+        { title: 'Total Users', value: dashboardData.totalUsers || '0', icon: UsersIcon },
     ];
 
     const fetchDashboardData = async () => {
-        setDashboardData({
-            totalListings: 5,
-            totalRevenue: 2980,
-            activeListings: 3,
-            totalUser: 7,
-            recentListings: dummyListings,
-        });
-        setLoading(false);
+        try {
+            const token=await getToken();
+            const {data} = await api.get('/api/admin/dashboard', {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+
+            setDashboardData(data.dashboardData);
+            setLoading(false);
+
+        } catch (error) {
+            toast.error(error?.response?.data?.message || error.message)
+            console.log(error)
+        }
     };
 
     useEffect(() => {
-        fetchDashboardData();
-    }, []);
+        if(user){
+            fetchDashboardData();
+        }
+    }, [user]);
 
     return loading ? (
         <div className='flex items-center justify-center h-full'>
