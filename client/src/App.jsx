@@ -9,7 +9,7 @@ import MyOrders from './pages/MyOrders'
 import Loading from './pages/Loading'
 import MyListings from './pages/MyListings'
 
-import NavBar from './components/NavBar'
+import NavBar from './components/Navbar'
 import ChatBox from './components/ChatBox'
 import { Toaster } from 'react-hot-toast'
 import Layout from './pages/admin/Layout'
