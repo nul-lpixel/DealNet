@@ -118,9 +118,7 @@ import sendEmail from "../configs/nodemailer.js";
 export const inngest = new Inngest({ id: "profile-marketplace" });
 
 //Inngest Function to save our data to the database
-const syncUserCreation = inngest.createFunction(
-  { id: "sync-user-from-clerk" },
-  { event: "clerk/user.created" },
+const syncUserCreation = inngest.createFunction({ id: "sync-user-from-clerk", event: "clerk/user.created" },
   async ({ event }) => {
     const {data}=event
 
@@ -166,9 +164,7 @@ const syncUserCreation = inngest.createFunction(
 );
 
 //Inngest function to delete user from database
-const syncUserDeletion = inngest.createFunction(
-  { id: "delete-user-with-clerk" },
-  { event: "clerk/user.deleted" },
+const syncUserDeletion = inngest.createFunction({ id: "delete-user-with-clerk", event: "clerk/user.deleted" },
   async ({ event }) => {
     const {data}=event
     
@@ -209,9 +205,7 @@ const syncUserDeletion = inngest.createFunction(
 );
 
 //Inngest function to update userdata in database
-const syncUserUpdation = inngest.createFunction(
-  { id: "update-user-from-clerk" },
-  { event: "clerk/user.updated" },
+const syncUserUpdation = inngest.createFunction({ id: "update-user-from-clerk", event: "clerk/user.updated" },
   async ({ event }) => {
     const {data}=event
 
@@ -237,9 +231,7 @@ const syncUserUpdation = inngest.createFunction(
 
 
 //Inngest function to send purchase email to the customer
-const sendPurchaseEmail = inngest.createFunction(
-  { id: "send-purchase-email" },
-  { event: "app/purchase" },
+const sendPurchaseEmail = inngest.createFunction({ id: "send-purchase-email", event: "app/purchase" },
   async ({ event }) => {
     const {transaction}=event.data
 
@@ -272,13 +264,11 @@ const sendPurchaseEmail = inngest.createFunction(
 
   }
 
-    
+        
 )
 
 //inngest function to send new credentials for deleted listings
-const sendNewCredentials = inngest.createFunction(
-  { id: "send-new-credentials" },
-  { event: "app/listing-deleted" },
+const sendNewCredentials = inngest.createFunction({ id: "send-new-credentials", event: "app/listing-deleted" },
   async ({ event }) => {
     const {listing,listingId}=event.data
 
